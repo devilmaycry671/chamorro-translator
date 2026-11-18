@@ -15,10 +15,5 @@ public repo is visible to everyone.
 
 The concordance (word search) works without a key.
 
-## Hosting on GitHub Pages
-
-Upload these files to the root of a repository, then go to **Settings → Pages → Build and deployment**,
-choose **Deploy from a branch**, pick `main` and `/ (root)`, and save. The site appears at
-`https://<your-username>.github.io/<repo-name>/` within a minute or two.
 
 Translations can be wrong. Check anything important with a fluent speaker.
