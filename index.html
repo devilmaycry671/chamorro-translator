@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Chamorro ↔ English translator that checks every translation against 8,580 real Chamorro sentences.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 52%22%3E%3Cpath d=%22M2 4H38Q38 18 20 18Q2 18 2 4Z%22 fill=%22%230b5c7a%22/%3E%3Cpath d=%22M12 20H28L31 50H9Z%22 fill=%22%230b5c7a%22 opacity=%22.72%22/%3E%3C/svg%3E">
+<title>Fino’ CHamoru Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single "device" (two facing panes on a sea-blue bar) leads; evidence, word glosses and the concordance sit below it as plain sections. */
+:root {
+  --bg: #eef2f1;          /* limestone, cool */
+  --surface: #ffffff;
+  --surface-2: #f6f8f8;
+  --ink: #10222b;
+  --muted: #56676e;
+  --line: #d5dddd;
+  --sea: #0b5c7a;         /* Pacific blue, the accent */
+  --sea-ink: #ffffff;
+  --sea-soft: #e0edf1;
+  --flag: #c8102e;        /* Guam flag red, used once: the device's edge */
+  --ok: #276b45;
+  --ok-soft: #e2f1e8;
+  --mark: #ffe39a;
+  --mark-ink: #10222b;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b161b; --surface: #12222a; --surface-2: #0f1d24; --ink: #e5eef0; --muted: #94a7ae; --line: #253942;
+    --sea: #5fb6d4; --sea-ink: #062431; --sea-soft: #15343f; --flag: #ff5c70; --ok: #74d39c; --ok-soft: #173326;
+    --mark: #6b5513; --mark-ink: #fff6dc; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b161b; --surface: #12222a; --surface-2: #0f1d24; --ink: #e5eef0; --muted: #94a7ae; --line: #253942;
+  --sea: #5fb6d4; --sea-ink: #062431; --sea-soft: #15343f; --flag: #ff5c70; --ok: #74d39c; --ok-soft: #173326;
+  --mark: #6b5513; --mark-ink: #fff6dc; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 1.25rem; font-weight: 700; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--sea); outline-offset: 2px; border-radius: 6px; }
+a { color: var(--sea); }
+.label { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* Header */
+.top { max-width: 1120px; margin: 0 auto; padding-block: 28px 22px; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: flex-end; justify-content: space-between; }
+.brand { display: flex; gap: 14px; align-items: center; min-width: 0; }
+.brand svg { flex: none; width: 40px; height: 52px; }
+.brand h1 { font-size: clamp(1.7rem, 4vw, 2.3rem); font-weight: 700; line-height: 1.05; }
+.brand p { margin: 4px 0 0; color: var(--muted); font-size: 0.95rem; max-width: 52ch; }
+.stats { display: flex; gap: 22px; flex-wrap: wrap; }
+.stat b { display: block; font-family: var(--mono); font-weight: 500; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+
+/* Device */
+.device { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 0 var(--line), 0 14px 32px -24px rgba(8, 40, 55, 0.45); border-top: 4px solid var(--flag); }
+.bar { background: var(--sea); color: var(--sea-ink); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 10px 16px; }
+.bar .lang { font-family: var(--display); font-weight: 700; font-size: 1.05rem; display: flex; flex-direction: column; line-height: 1.2; }
+.bar .lang small { font-family: var(--mono); font-weight: 400; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+.bar .lang.to { text-align: right; align-items: flex-end; }
+.swap { border: 1px solid color-mix(in srgb, var(--sea-ink) 45%, transparent); background: transparent; color: var(--sea-ink); border-radius: 999px; padding: 6px 14px; display: inline-flex; gap: 8px; align-items: center; font-size: 0.9rem; }
+.swap:hover { background: color-mix(in srgb, var(--sea-ink) 14%, transparent); }
+.swap svg { width: 18px; height: 18px; }
+.panes { display: grid; grid-template-columns: 1fr 1fr; }
+.pane { padding: 16px 18px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.pane + .pane { border-left: 1px solid var(--line); background: var(--surface-2); }
+textarea#src { width: 100%; min-height: 180px; resize: vertical; border: 0; background: transparent; font-size: 1.3rem; line-height: 1.45; padding: 0; }
+textarea#src:focus-visible { outline: none; }
+.pane-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+.pane-tools .spacer { flex: 1; }
+.icon-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 5px 10px; font-size: 0.85rem; display: inline-flex; gap: 6px; align-items: center; color: var(--ink); }
+.icon-btn:hover { border-color: var(--sea); }
+.icon-btn[aria-pressed="true"] { background: var(--sea); color: var(--sea-ink); border-color: var(--sea); }
+.icon-btn svg { width: 15px; height: 15px; }
+#out { font-size: 1.3rem; line-height: 1.45; min-height: 120px; overflow-wrap: anywhere; }
+#out.placeholder { color: var(--muted); font-size: 1.05rem; }
+#out .w { cursor: pointer; border-radius: 3px; }
+#out .w:hover { background: var(--sea-soft); }
+#out .w.unseen { text-decoration: underline dashed color-mix(in srgb, var(--muted) 70%, transparent); text-underline-offset: 4px; text-decoration-thickness: 1px; }
+.literal { color: var(--muted); font-size: 0.95rem; font-style: italic; margin: 0; }
+.notes { font-size: 0.92rem; margin: 0; padding: 8px 10px; border-left: 3px solid var(--sea); background: var(--sea-soft); border-radius: 0 6px 6px 0; }
+.pill { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; border: 1px solid currentColor; }
+.pill.high { color: var(--ok); }
+.pill.medium { color: var(--sea); }
+.pill.low { color: var(--flag); }
+.pill.example { color: var(--muted); }
+.foot { display: flex; gap: 12px; align-items: center; padding: 12px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+#status { flex: 1; min-width: 0; color: var(--muted); font-size: 0.92rem; }
+#status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--sea); margin-right: 8px; vertical-align: middle; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+@media (prefers-reduced-motion: reduce) { #status .dot { animation: none; } }
+.primary { background: var(--sea); color: var(--sea-ink); border: 0; border-radius: 9px; padding: 10px 22px; font-family: var(--display); font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; gap: 10px; }
+.primary:disabled { opacity: 0.55; cursor: progress; }
+.primary kbd { font-family: var(--mono); font-size: 0.7rem; font-weight: 400; opacity: 0.8; }
+.keybar { border-top: 1px solid var(--line); padding: 14px 18px; background: var(--surface-2); font-size: 0.92rem; }
+.keybar p { margin: 0; color: var(--muted); }
+.keyform { display: grid; gap: 8px; }
+.keyform label { color: var(--muted); }
+.keyform label b { display: block; color: var(--ink); }
+.keyrow { display: flex; gap: 10px; flex-wrap: wrap; }
+.keyrow input { flex: 1 1 240px; min-width: 0; border: 1px solid var(--line); background: var(--surface); border-radius: 9px; padding: 9px 12px; font-family: var(--mono); font-size: 0.9rem; }
+.linkish { background: none; border: 0; padding: 0; color: var(--sea); text-decoration: underline; }
+.ghost { background: transparent; border: 1px solid var(--line); border-radius: 9px; padding: 9px 16px; }
+
+/* Lower sections */
+.split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 28px; align-items: start; }
+.sec { display: grid; gap: 12px; min-width: 0; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sec-head p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.gloss { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.gloss button { all: unset; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 7.2rem; gap: 12px; align-items: baseline; padding: 9px 4px; border-bottom: 1px solid var(--line); }
+.gloss button:hover { background: var(--surface); }
+.gloss button:focus-visible { outline: 3px solid var(--sea); }
+.gloss .term { font-weight: 700; overflow-wrap: anywhere; }
+.gloss .mean { color: var(--muted); overflow-wrap: anywhere; }
+.gloss .count { justify-self: end; }
+.count { font-family: var(--mono); font-size: 0.75rem; font-variant-numeric: tabular-nums; padding: 2px 7px; border-radius: 6px; background: var(--ok-soft); color: var(--ok); white-space: nowrap; }
+.count.zero { background: transparent; color: var(--muted); border: 1px dashed var(--line); }
+.ev { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ev li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; min-width: 0; }
+.ev .text { margin: 0 0 6px; overflow-wrap: anywhere; }
+.src { font-size: 0.8rem; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; }
+.src a { color: var(--muted); }
+mark { background: var(--mark); color: var(--mark-ink); border-radius: 3px; padding: 0 2px; }
+.empty { color: var(--muted); font-size: 0.95rem; border: 1px dashed var(--line); border-radius: var(--r); padding: 14px; }
+
+.concord { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 14px; }
+.search { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.search input[type="search"] { flex: 1 1 260px; min-width: 0; border: 1px solid var(--line); background: var(--surface-2); border-radius: 9px; padding: 10px 14px; font-size: 1.05rem; }
+.check { display: inline-flex; gap: 8px; align-items: center; font-size: 0.9rem; color: var(--muted); }
+.tries { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 3px 12px; font-size: 0.9rem; }
+.chip:hover { border-color: var(--sea); color: var(--sea); }
+.forms { font-size: 0.9rem; color: var(--muted); }
+.forms b { color: var(--ink); font-weight: 700; }
+.kwic { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.kwic li { padding: 10px 2px; border-bottom: 1px solid var(--line); display: grid; gap: 3px; min-width: 0; }
+.kwic .text { overflow-wrap: anywhere; }
+.hist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.hist button { all: unset; cursor: pointer; display: grid; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; width: 100%; box-sizing: border-box; min-width: 0; }
+.hist button:hover { border-color: var(--sea); }
+.hist .a { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist .b { color: var(--muted); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+footer { color: var(--muted); font-size: 0.88rem; max-width: 75ch; display: grid; gap: 8px; }
+footer p { margin: 0; }
+
+@media (max-width: 760px) {
+  .panes, .split { grid-template-columns: 1fr; }
+  .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
+  textarea#src { min-height: 120px; font-size: 1.15rem; }
+  #out { font-size: 1.15rem; min-height: 80px; }
+  .bar { grid-template-columns: 1fr auto 1fr; padding: 10px 12px; }
+  .swap span { display: none; }
+  .primary kbd { display: none; }
+}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 52" aria-hidden="true">
+      <path d="M2 4 H38 Q38 18 20 18 Q2 18 2 4 Z" fill="var(--sea)"/>
+      <path d="M12 20 H28 L31 50 H9 Z" fill="var(--sea)" opacity="0.72"/>
+    </svg>
+    <div>
+      <h1>Fino’ CHamoru</h1>
+      <p>A Chamorro ↔ English translator. Claude translates; the Chamorro Corpus Builder dataset shows how each word is really used.</p>
+    </div>
+  </div>
+  <div class="stats" aria-live="polite">
+    <div class="stat"><span class="label">Sentences</span><b id="st-s">…</b></div>
+    <div class="stat"><span class="label">Word forms</span><b id="st-w">…</b></div>
+    <div class="stat"><span class="label">Sources</span><b id="st-d">…</b></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="device" aria-label="Translator">
+    <div class="bar">
+      <div class="lang from"><small>From</small><span id="lang-from">CHamoru</span></div>
+      <button class="swap" id="swap" type="button" aria-label="Swap languages">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h13l-4-4M17 17H4l4 4"/></svg>
+        <span>Swap</span>
+      </button>
+      <div class="lang to"><small>To</small><span id="lang-to">English</span></div>
+    </div>
+    <div class="panes">
+      <div class="pane">
+        <label class="label" for="src" id="src-label">Chamorro text</label>
+        <textarea id="src" spellcheck="false" maxlength="1500">Nå’i gråsia i Saina, sa’ måolik Gui’ sa’ i mina’ase’-ña para todu i tiempu.</textarea>
+        <div class="pane-tools">
+          <span class="label num" id="chars">0 / 1500</span>
+          <span class="spacer"></span>
+          <button class="icon-btn" id="mic" type="button" hidden aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+            <span>Speak</span>
+          </button>
+          <button class="icon-btn" id="clear" type="button">Clear</button>
+        </div>
+      </div>
+      <div class="pane" aria-live="polite">
+        <span class="label" id="out-label">English translation</span>
+        <div id="out"></div>
+        <p class="literal" id="literal" hidden></p>
+        <p class="notes" id="notes" hidden></p>
+        <div class="pane-tools">
+          <span class="pill example" id="conf">Example</span>
+          <span class="spacer"></span>
+          <button class="icon-btn" id="speak" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+            <span>Listen</span>
+          </button>
+          <button class="icon-btn" id="copy" type="button">Copy</button>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <div id="status">This is a sample translation of Psalm 118:1 from the corpus. Press Translate to run it live.</div>
+      <button class="ghost" id="stop" type="button" hidden>Stop</button>
+      <button class="primary" id="go" type="button">Translate <kbd>Ctrl ↵</kbd></button>
+    </div>
+    <div class="keybar" id="keybar" hidden>
+      <form id="keyform" class="keyform">
+        <label for="apikey"><b>Your Claude API key</b> Translation runs on your own Anthropic account. The key is saved only in this browser and sent only to api.anthropic.com.</label>
+        <div class="keyrow">
+          <input id="apikey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+          <button class="primary" type="submit">Save key</button>
+        </div>
+        <p>No key yet? Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. The concordance below works without one.</p>
+      </form>
+      <p id="keyset" hidden>Your API key is saved in this browser. <button type="button" class="linkish" id="keyforget">Remove key</button></p>
+    </div>
+  </section>
+
+  <div class="split">
+    <section class="sec" aria-labelledby="h-words">
+      <div class="sec-head">
+        <h2 id="h-words">Word by word</h2>
+        <p>Counts show how often each word appears in the corpus</p>
+      </div>
+      <div class="gloss" id="gloss"></div>
+    </section>
+    <section class="sec" aria-labelledby="h-ev">
+      <div class="sec-head">
+        <h2 id="h-ev">From the corpus</h2>
+        <p id="ev-note">Real sentences that share words with your text</p>
+      </div>
+      <ul class="ev" id="ev"><li class="empty">Loading the corpus…</li></ul>
+    </section>
+  </div>
+
+  <section class="concord" aria-labelledby="h-con">
+    <div class="sec-head">
+      <h2 id="h-con">Concordance</h2>
+      <p>See any Chamorro word in context across the whole corpus</p>
+    </div>
+    <form class="search" id="cform">
+      <input type="search" id="q" placeholder="Search a Chamorro word, e.g. guinaiya" autocomplete="off" spellcheck="false" aria-label="Chamorro word">
+      <label class="check"><input type="checkbox" id="loose" checked> Match spelling variants (å/a, o/u, e/i, ’)</label>
+    </form>
+    <div class="tries"><span class="label">Try</span></div>
+    <div class="forms" id="forms"></div>
+    <ul class="kwic" id="kwic"></ul>
+    <div><button class="ghost" id="more" type="button" hidden>Show more</button></div>
+  </section>
+
+  <section class="sec" aria-labelledby="h-hist" id="hist-sec" hidden>
+    <div class="sec-head">
+      <h2 id="h-hist">Recent translations</h2>
+      <p>Saved in this browser only</p>
+    </div>
+    <ul class="hist" id="hist"></ul>
+  </section>
+
+  <footer>
+    <p><b>About the data.</b> The corpus comes from <a href="https://github.com/schyuler/Chamorro-Corpus-Builder" target="_blank" rel="noopener">schyuler/Chamorro-Corpus-Builder</a>: North Star Sunday readings (2017–2025), the Chamorro addendum to the 2010 Guam and CNMI Military Relocation EIS, and the booklet <i>Matto Tatte Ginen I Lugat I Gerra</i>. It is Chamorro only, with no English pairs, so it can confirm spelling and usage but cannot translate by itself.</p>
+    <p><b>Accuracy.</b> Translations are written by Claude and can be wrong, especially for idioms and for words the corpus doesn't contain (shown with a dashed underline). Check anything important with a fluent speaker or the <a href="https://www.chamoru.info/dictionary/" target="_blank" rel="noopener">Chamoru.info dictionary</a>. Each translation is billed to your own Anthropic API account, usually a few cents.</p>
+  </footer>
+</main>
+
+<script type="module">
+import { Anthropic, betaTool } from "./vendor/anthropic-sdk-1.4.0.mjs";
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const fmt = (n) => n.toLocaleString("en-US");
+
+  // ---------- Text normalisation ----------
+  const WORD_RE = /\p{L}[\p{L}’'‘ʼ]*/gu;
+  const exact = (w) => w.toLowerCase().normalize("NFC").replace(/['‘ʼ]/g, "’").replace(/^’+/, "");
+  const loose = (w) => w.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[’'‘ʼ]/g, "").replace(/e/g, "i").replace(/o/g, "u");
+  const words = (t) => t.match(WORD_RE) || [];
+
+  // ---------- Corpus index ----------
+  const C = { sents: [], sources: [], post: new Map(), postX: new Map(), forms: new Map(), N: 0, ready: false };
+  function addPost(map, k, i) { let a = map.get(k); if (!a) map.set(k, a = []); if (a[a.length - 1] !== i) a.push(i); }
+  function buildIndex(data) {
+    C.sents = data.s; C.sources = data.sources; C.N = data.s.length;
+    data.s.forEach(([text], i) => {
+      for (const w of words(text)) {
+        const k = loose(w), x = exact(w);
+        addPost(C.post, k, i); addPost(C.postX, x, i);
+        let f = C.forms.get(k); if (!f) C.forms.set(k, f = new Map());
+        f.set(x, (f.get(x) || 0) + 1);
+      }
+    });
+    C.ready = true;
+  }
+  const df = (k) => (C.post.get(k) || []).length;
+  const idf = (k) => Math.log((C.N + 1) / (df(k) + 0.5));
+  // Sentence ids containing every word of a term (spelling variants matched).
+  function phraseHits(term) {
+    const ks = [...new Set(words(term).map(loose))];
+    let set = null;
+    for (const k of ks) { const p = C.post.get(k) || []; if (!set) set = p.slice(); else { const ps = new Set(p); set = set.filter((i) => ps.has(i)); } if (!set.length) break; }
+    return set || [];
+  }
+  const countPhrase = (term) => phraseHits(term).length;
+
+  // Pick a handful of corpus sentences that together cover the rarest words of the input.
+  function evidenceFor(text, max = 7) {
+    const keys = [...new Set(words(text).map(loose))].filter((k) => df(k) > 0);
+    const content = keys.filter((k) => df(k) < C.N * 0.06);
+    const use = content.length ? content : keys;
+    const cand = new Set();
+    for (const k of use) for (const i of (C.post.get(k) || []).slice(0, 400)) cand.add(i);
+    const sentKeys = new Map();
+    for (const i of cand) sentKeys.set(i, new Set(words(C.sents[i][0]).map(loose)));
+    const covered = new Set(), picked = [];
+    while (picked.length < max) {
+      let best = -1, bestScore = 0;
+      for (const [i, ks] of sentKeys) {
+        let s = 0;
+        for (const k of use) if (ks.has(k)) s += covered.has(k) ? idf(k) * 0.15 : idf(k);
+        s /= 1 + C.sents[i][0].length / 400;
+        if (s > bestScore) { bestScore = s; best = i; }
+      }
+      if (best < 0 || bestScore < 0.5) break;
+      picked.push(best);
+      for (const k of sentKeys.get(best)) if (use.includes(k)) covered.add(k);
+      sentKeys.delete(best);
+    }
+    return { picked, keys: new Set(use) };
+  }
+
+  // Trim a long sentence to a window around its first highlighted word.
+  function excerpt(text, keys, span = 150, keyFn = loose) {
+    if (text.length <= span * 2) return text;
+    const re = new RegExp(WORD_RE.source, "gu"); let m, at = 0;
+    while ((m = re.exec(text))) if (keys.has(keyFn(m[0]))) { at = m.index; break; }
+    const a = Math.max(0, at - span), b = Math.min(text.length, at + span);
+    return (a > 0 ? "… " : "") + text.slice(a, b).replace(/^\S*\s/, a > 0 ? "" : "$&") + (b < text.length ? " …" : "");
+  }
+  // Render text into a node, marking words whose key is in `keys`.
+  function paint(node, text, keys, keyFn = loose) {
+    const re = new RegExp(WORD_RE.source, "gu"); let last = 0, m;
+    while ((m = re.exec(text))) {
+      if (keys.has(keyFn(m[0]))) {
+        node.append(text.slice(last, m.index), el("mark", null, m[0]));
+        last = m.index + m[0].length;
+      }
+    }
+    node.append(text.slice(last));
+    return node;
+  }
+  function sourceLine(si) {
+    const s = C.sources[si], p = el("div", "src");
+    const a = el("a", null, s.t); a.href = s.u; a.target = "_blank"; a.rel = "noopener";
+    p.append(a, el("span", null, "· " + s.d));
+    return p;
+  }
+
+  // ---------- State ----------
+  let dir = "ch-en";           // or "en-ch"
+  let current = null;          // last result shown
+  let sample = null, tts = null, dictation = null, canTools = false;
+  let ctl = null;
+
+  const EXAMPLE = {
+    dir: "ch-en",
+    src: "Nå’i gråsia i Saina, sa’ måolik Gui’ sa’ i mina’ase’-ña para todu i tiempu.",
+    translation: "Give thanks to the Lord, for He is good, for His mercy endures forever.",
+    literal: "Give grace/thanks the Lord, because good He, because the mercy-his for all the time.",
+    glossary: [
+      { term: "nå’i", meaning: "give" }, { term: "gråsia", meaning: "thanks; grace" },
+      { term: "i", meaning: "the (article)" }, { term: "Saina", meaning: "Lord; elder, parent" },
+      { term: "sa’", meaning: "because, for" }, { term: "måolik", meaning: "good" },
+      { term: "Gui’", meaning: "he/him (emphatic, here God)" }, { term: "mina’ase’-ña", meaning: "his mercy, compassion" },
+      { term: "para todu i tiempu", meaning: "for all time, forever" },
+    ],
+    notes: "This line is the refrain of Psalm 118 in the Sunday readings. Capitalised Gui’ marks a pronoun that refers to God.",
+    confidence: "example",
+  };
+
+  // ---------- Rendering ----------
+  function setDir(d) {
+    dir = d;
+    const ch = d === "ch-en";
+    $("lang-from").textContent = ch ? "CHamoru" : "English";
+    $("lang-to").textContent = ch ? "English" : "CHamoru";
+    $("src-label").textContent = ch ? "Chamorro text" : "English text";
+    $("out-label").textContent = ch ? "English translation" : "Chamorro translation";
+    $("src").placeholder = ch ? "Type or paste Chamorro, e.g. Håfa adai! Kao maolek hao?" : "Type English, e.g. Thank you for the food";
+    $("mic").hidden = !(dictation && !ch);
+    updateSpeak();
+  }
+  function updateSpeak() { $("speak").hidden = !(tts && current && current.dir === "ch-en" && current.translation); }
+
+  function renderResult(r) {
+    current = r;
+    const out = $("out"); out.replaceChildren(); out.classList.remove("placeholder");
+    const chOut = r.dir === "en-ch";
+    if (chOut && C.ready) {
+      // Each Chamorro word is clickable; words not found in the corpus get a dashed underline.
+      const re = new RegExp(WORD_RE.source, "gu"); let last = 0, m; const t = r.translation;
+      while ((m = re.exec(t))) {
+        out.append(t.slice(last, m.index));
+        const s = el("span", "w" + (df(loose(m[0])) ? "" : " unseen"), m[0]);
+        s.tabIndex = 0; s.title = df(loose(m[0])) ? `In the corpus ${fmt(df(loose(m[0])))}× · click for examples` : "Not found in the corpus";
+        s.dataset.q = m[0]; out.append(s); last = m.index + m[0].length;
+      }
+      out.append(t.slice(last));
+    } else out.textContent = r.translation;
+    $("literal").hidden = !r.literal; $("literal").textContent = r.literal ? "Literally: " + r.literal : "";
+    $("notes").hidden = !r.notes; $("notes").textContent = r.notes || "";
+    const c = $("conf"); c.className = "pill " + (r.confidence || "medium");
+    c.textContent = r.confidence === "example" ? "Example" : (r.confidence || "medium") + " confidence";
+    renderGloss(r);
+    renderEvidence(r);
+    updateSpeak();
+  }
+
+  function renderGloss(r) {
+    const g = $("gloss"); g.replaceChildren();
+    const list = (r.glossary || []).filter((x) => x && x.term);
+    if (!list.length) { g.append(el("div", "empty", "No word list for this translation.")); return; }
+    for (const { term, meaning } of list) {
+      const n = C.ready ? countPhrase(term) : 0;
+      const b = el("button"); b.type = "button"; b.dataset.q = term;
+      b.append(el("span", "term", term), el("span", "mean", meaning || ""), el("span", "count" + (n ? "" : " zero"), n ? fmt(n) + "×" : "not in corpus"));
+      b.setAttribute("aria-label", `${term}: ${meaning}. ${n ? n + " corpus sentences" : "not in corpus"}. Show in concordance`);
+      g.append(b);
+    }
+  }
+
+  function renderEvidence(r) {
+    const ul = $("ev"); ul.replaceChildren();
+    if (!C.ready) { ul.append(el("li", "empty", "Loading the corpus…")); return; }
+    let picked, keys;
+    if (r.evidence) ({ picked, keys } = r.evidence);
+    else ({ picked, keys } = evidenceFor(r.dir === "ch-en" ? r.src : r.translation));
+    $("ev-note").textContent = r.dir === "ch-en" ? "Real sentences that share words with your text" : "Real sentences that use words from the translation";
+    if (!picked.length) { ul.append(el("li", "empty", "None of these words appear in the corpus. Treat the translation with extra care.")); return; }
+    for (const i of picked) {
+      const [text, si] = C.sents[i];
+      const li = el("li");
+      li.append(paint(el("p", "text"), excerpt(text, keys), keys), sourceLine(si));
+      ul.append(li);
+    }
+  }
+
+  // ---------- Concordance ----------
+  let cResults = [], cShown = 0, cKeys = new Set(), cLoose = true;
+  const TRIES = ["guinaiya", "hånom", "tåno’", "famagu’on", "lina’la’", "si Yu’us ma’åse’", "minagof", "tasi"];
+  function search(q, scroll) {
+    $("q").value = q;
+    const ws = words(q); cLoose = $("loose").checked;
+    const fn = cLoose ? loose : exact, map = cLoose ? C.post : C.postX;
+    cKeys = new Set(ws.map(fn));
+    const forms = $("forms"); forms.replaceChildren(); $("kwic").replaceChildren(); $("more").hidden = true;
+    if (!ws.length || !C.ready) return;
+    let set = null;
+    for (const k of cKeys) { const p = map.get(k) || []; if (!set) set = p.slice(); else { const ps = new Set(p); set = set.filter((i) => ps.has(i)); } }
+    cResults = set || [];
+    if (!cResults.length) {
+      // Suggest words that start the same way.
+      const pre = loose(ws[ws.length - 1]); const sugg = [];
+      for (const [k, p] of C.post) if (k.startsWith(pre.slice(0, Math.max(3, pre.length - 1))) && k !== pre) sugg.push([k, p.length]);
+      sugg.sort((a, b) => b[1] - a[1]);
+      forms.append(el("span", null, `No sentences contain “${q}”. `));
+      if (sugg.length) {
+        forms.append(el("span", null, "Similar words: "));
+        sugg.slice(0, 8).forEach(([k], j) => {
+          const top = [...C.forms.get(k)].sort((a, b) => b[1] - a[1])[0][0];
+          const b = el("button", "chip", top); b.type = "button"; b.dataset.q = top; forms.append(b, " ");
+        });
+      }
+    } else {
+      forms.append(el("b", "num", fmt(cResults.length)), ` sentence${cResults.length === 1 ? "" : "s"}`);
+      if (ws.length === 1 && cLoose) {
+        const f = [...(C.forms.get(cKeys.values().next().value) || [])].sort((a, b) => b[1] - a[1]);
+        if (f.length > 1) forms.append(" · spellings: " + f.slice(0, 6).map(([x, n]) => `${x} (${fmt(n)})`).join(", "));
+      }
+    }
+    cShown = 0; showMore();
+    if (scroll) $("h-con").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+  function showMore() {
+    const ul = $("kwic"), fn = cLoose ? loose : exact;
+    for (const i of cResults.slice(cShown, cShown + 40)) {
+      const [text, si] = C.sents[i]; const li = el("li");
+      const ex = excerpt(text, cKeys, 140, fn);
+      li.append(paint(el("div", "text"), ex, cKeys, fn), sourceLine(si));
+      ul.append(li);
+    }
+    cShown = Math.min(cResults.length, cShown + 40);
+    $("more").hidden = cShown >= cResults.length;
+    $("more").textContent = `Show more (${fmt(cResults.length - cShown)} left)`;
+  }
+
+  // ---------- Translation ----------
+  const ERR = {
+    not_granted: "Claude isn't allowed for this page. You can still use the concordance below.",
+    sampling_disabled: "Claude isn't available on this account. The concordance still works.",
+    rate_limited: "Too many requests right now. Wait a minute, then press Translate again.",
+    session_expired: "Your session expired. Sign in to claude.ai again, then retry.",
+    refused: "Claude declined this text. Try rephrasing it.",
+    invalid_json: "The reply came back in an unexpected format. Press Translate to try again.",
+    prompt_too_large: "That text is too long. Translate a shorter passage.",
+    empty_completion: "No translation came back. Try a shorter passage.",
+    bad_key: "Anthropic rejected that API key. Check it in the key box below.",
+    no_access: "This API key can't use the model. Check your Anthropic account's access and billing.",
+    network: "Couldn't reach Anthropic. Check your connection and try again.",
+  };
+  const status = (msg, busy) => { const s = $("status"); s.replaceChildren(); if (busy) s.append(el("span", "dot")); s.append(msg); };
+
+  function promptChEn(src, ev) {
+    const lines = ev.picked.map((i) => "- " + excerpt(C.sents[i][0], ev.keys, 160));
+    return `You are a careful translator of Chamorro (CHamoru), the language of Guam and the Northern Mariana Islands.
+Translate the Chamorro text below into natural English.
+
+Spelling varies between sources: Guam orthography uses å, ñ and the glottal stop ’; older and Saipan spellings may drop them, and o/u and e/i often alternate (todo/todu, este/esti). Read through these variants.
+
+${lines.length ? "Real sentences from a Chamorro corpus (church readings, a government report, a health booklet) that contain words from the text. They are untranslated; use them only as evidence of how the words are used:\n" + lines.join("\n") + "\n" : ""}
+Chamorro text:
+"""${src}"""
+
+Reply with only a JSON object, no other text:
+{"translation": "natural English translation",
+ "literal": "a short word-by-word gloss in English, or \\"\\" if the text is longer than two sentences",
+ "glossary": [{"term": "a word or short phrase exactly as written in the text", "meaning": "short English meaning"}],
+ "notes": "one or two sentences on idioms, ambiguity or uncertain words, or \\"\\"",
+ "confidence": "high" | "medium" | "low"}
+List up to 12 glossary entries in the order they appear, skipping repeats.`;
+  }
+  function promptEnCh(src, tools) {
+    return `You are a careful translator into Chamorro (CHamoru), the language of Guam and the Northern Mariana Islands.
+Translate the English text below into natural, everyday Chamorro. Use modern Guam orthography with å, ñ and the glottal stop ’ (for example: håfa, mañe’lu, si Yu’os ma’åse’).
+${tools ? `
+You have a tool, search_corpus, that looks words up in a real Chamorro corpus (church readings, a government report, a health booklet) and returns how often each appears with example sentences. Before answering, call it once with the main Chamorro words you plan to use (up to 10) to check their spelling and usage. If a word is not found, consider a better-attested word or spelling. Do not call it more than twice.
+` : ""}
+English text:
+"""${src}"""
+
+Reply with only a JSON object, no other text:
+{"translation": "the Chamorro translation",
+ "literal": "a short word-by-word English gloss of your Chamorro, or \\"\\" if longer than two sentences",
+ "glossary": [{"term": "a Chamorro word or short phrase exactly as written in your translation", "meaning": "short English meaning"}],
+ "notes": "one or two sentences on word choice, regional variants or uncertainty, or \\"\\"",
+ "confidence": "high" | "medium" | "low"}
+List up to 12 glossary entries in the order they appear, skipping repeats.`;
+  }
+
+  async function translate() {
+    const src = $("src").value.trim();
+    if (!src) { status("Type something to translate first."); $("src").focus(); return; }
+    if (!sample && !apiKey()) { status("Add your Claude API key below to translate."); $("apikey").focus(); return; }
+    if (!C.ready) { status("The corpus is still loading. Try again in a moment."); return; }
+    ctl?.abort(); ctl = new AbortController();
+    const myDir = dir; const searched = new Set();
+    $("go").disabled = true; $("stop").hidden = false;
+    status(myDir === "ch-en" ? "Finding corpus examples and translating…" : "Translating…", true);
+    try {
+      let prompt, opts = { signal: ctl.signal };
+      let ev = null;
+      if (myDir === "ch-en") {
+        ev = evidenceFor(src);
+        prompt = promptChEn(src, ev);
+      } else {
+        const useTools = canTools;
+        prompt = promptEnCh(src, useTools);
+        if (useTools) opts.tools = [{
+          name: "search_corpus",
+          description: "Look up Chamorro words in a corpus of 8,500 real Chamorro sentences. Returns, for each word, how many sentences contain it (spelling variants matched), the most common spellings, and up to 2 short example sentences.",
+          inputSchema: { type: "object", properties: { words: { type: "array", items: { type: "string" }, description: "Chamorro words to look up, up to 10" } }, required: ["words"] },
+          execute(input) {
+            const ws = (Array.isArray(input.words) ? input.words : [input.words]).map(String).slice(0, 10);
+            ws.forEach((w) => searched.add(w));
+            status("Checking the corpus for: " + ws.join(", "), true);
+            return ws.map((w) => {
+              const ks = new Set(words(w).map(loose)); const p = phraseHits(w);
+              const f = ks.size === 1 ? [...(C.forms.get([...ks][0]) || [])].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([x]) => x) : [];
+              return { word: w, sentences: p.length, spellings: f, examples: p.slice(0, 40).sort((a, b) => C.sents[a][0].length - C.sents[b][0].length).slice(0, 2).map((i) => excerpt(C.sents[i][0], ks, 90)) };
+            });
+          },
+        }];
+      }
+      const r = sample ? await sample.json(prompt, opts) : await apiJson(prompt, opts);
+      if (!r || typeof r.translation !== "string" || !r.translation.trim()) throw { code: "invalid_json" };
+      const result = {
+        dir: myDir, src,
+        translation: r.translation.trim(),
+        literal: typeof r.literal === "string" ? r.literal.trim() : "",
+        glossary: Array.isArray(r.glossary) ? r.glossary.slice(0, 14).map((g) => ({ term: String(g?.term ?? ""), meaning: String(g?.meaning ?? "") })) : [],
+        notes: typeof r.notes === "string" ? r.notes.trim() : "",
+        confidence: ["high", "medium", "low"].includes(r.confidence) ? r.confidence : "medium",
+      };
+      renderResult(result);
+      const n = ev ? ev.picked.length : 0;
+      status(myDir === "ch-en"
+        ? (n ? `Translated with ${n} corpus example${n === 1 ? "" : "s"} as evidence. Click a word below to see it in context.` : "Translated. None of these words appear in the corpus, so check this one carefully.")
+        : (searched.size ? `Translated. Claude checked ${searched.size} word${searched.size === 1 ? "" : "s"} against the corpus. Click any word to see it in context.` : "Translated. Click any word to see it in context; dashed words aren't in the corpus."));
+      saveHistory(result);
+    } catch (e) {
+      if (e?.code === "cancelled") status("Stopped.");
+      else if (e?.code === "tools_unavailable") { canTools = false; status("Corpus lookup isn't available in this view. Press Translate to run without it."); }
+      else status(ERR[e?.code] || (e?.code === "bad_request" ? "Anthropic refused the request: " + e.message : "Something went wrong reaching Claude. Press Translate to try again."));
+    } finally {
+      $("go").disabled = false; $("stop").hidden = true;
+    }
+  }
+
+  // ---------- Claude API (website mode) ----------
+  const KEY = "fino-chamoru-api-key";
+  const apiKey = () => { try { return localStorage.getItem(KEY) || ""; } catch { return memKey; } };
+  let memKey = "";
+  function parseJson(text) {
+    try { return JSON.parse(text); } catch {}
+    const fence = text.match(/```(?:json)?\s*([\s\S]*?)```/); if (fence) { try { return JSON.parse(fence[1]); } catch {} }
+    const a = text.indexOf("{"), b = text.lastIndexOf("}");
+    if (a >= 0 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch {} }
+    throw { code: "invalid_json" };
+  }
+  async function apiJson(prompt, opts) {
+    const client = new Anthropic({ apiKey: apiKey(), dangerouslyAllowBrowser: true });
+    const params = {
+      model: "claude-opus-5-5",
+      max_tokens: 16000,
+      output_config: { effort: "medium" },
+      // If Claude declines on safety grounds, the API retries on a fallback model in the same call.
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      messages: [{ role: "user", content: prompt }],
+    };
+    let msg;
+    try {
+      if (opts.tools) {
+        const tools = opts.tools.map((t) => betaTool({
+          name: t.name, description: t.description, inputSchema: t.inputSchema,
+          run: async (input) => JSON.stringify(await t.execute(input)),
+        }));
+        msg = await client.beta.messages.toolRunner({ ...params, tools, max_iterations: 4 }, { signal: opts.signal });
+      } else {
+        msg = await client.beta.messages.create(params, { signal: opts.signal });
+      }
+    } catch (e) {
+      if (e instanceof Anthropic.APIUserAbortError) throw { code: "cancelled" };
+      if (e instanceof Anthropic.AuthenticationError) throw { code: "bad_key" };
+      if (e instanceof Anthropic.PermissionDeniedError) throw { code: "no_access" };
+      if (e instanceof Anthropic.RateLimitError) throw { code: "rate_limited" };
+      if (e instanceof Anthropic.BadRequestError) throw { code: "bad_request", message: String(e.error?.error?.message || e.message).slice(0, 200) };
+      if (e instanceof Anthropic.APIConnectionError) throw { code: "network" };
+      throw { code: "upstream_error" };
+    }
+    if (msg.stop_reason === "refusal") throw { code: "refused" };
+    return parseJson(msg.content.filter((b) => b.type === "text").map((b) => b.text).join("\n"));
+  }
+  // Browser speech, used when the page isn't running inside claude.ai.
+  function browserTts() {
+    if (!("speechSynthesis" in window)) return null;
+    return { speak: (text) => new Promise((res, rej) => { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.onend = res; u.onerror = rej; speechSynthesis.speak(u); }) };
+  }
+  function browserDictation() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) return null;
+    let rec = null; const cb = {};
+    return {
+      onPartial(f) { cb.p = f; }, onFinal(f) { cb.f = f; }, onState(f) { cb.s = f; },
+      start() {
+        rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = true;
+        rec.onresult = (e) => { let interim = ""; for (let i = e.resultIndex; i < e.results.length; i++) { const r = e.results[i]; if (r.isFinal) cb.f?.({ text: r[0].transcript.trim() }); else interim += r[0].transcript; } cb.p?.({ text: interim }); };
+        rec.onstart = () => cb.s?.({ state: "listening" }); rec.onend = () => cb.s?.({ state: "idle" }); rec.onerror = () => cb.s?.({ state: "idle" });
+        rec.start(); return Promise.resolve();
+      },
+      stop() { rec?.stop(); return Promise.resolve(); },
+    };
+  }
+  function wireDictation(d) {
+    dictation = d; if (!d) return;
+    d.onPartial(({ text }) => { $("src").value = dictBase + text; updChars(); });
+    d.onFinal(({ text }) => { dictBase = dictBase + text + " "; $("src").value = dictBase; updChars(); });
+    d.onState(({ state }) => { $("mic").setAttribute("aria-pressed", state === "listening" ? "true" : "false"); $("mic").querySelector("span").textContent = state === "listening" ? "Listening…" : "Speak"; });
+    setDir(dir);
+  }
+  function renderKey() {
+    const has = !!apiKey(); $("keybar").hidden = false;
+    $("keyform").hidden = has; $("keyset").hidden = !has;
+  }
+  $("keyform").addEventListener("submit", (e) => {
+    e.preventDefault(); const v = $("apikey").value.trim(); if (!v) return;
+    memKey = v; try { localStorage.setItem(KEY, v); } catch {}
+    $("apikey").value = ""; renderKey(); status("API key saved. Press Translate.");
+  });
+  $("keyforget").addEventListener("click", () => { memKey = ""; try { localStorage.removeItem(KEY); } catch {} renderKey(); status("API key removed from this browser."); });
+
+  // ---------- History (this browser only) ----------
+  const HKEY = "fino-chamoru-history";
+  const loadHist = () => { try { return JSON.parse(localStorage.getItem(HKEY) || "[]"); } catch { return []; } };
+  function saveHistory(r) {
+    const h = loadHist().filter((x) => !(x.src === r.src && x.dir === r.dir));
+    h.unshift(r); try { localStorage.setItem(HKEY, JSON.stringify(h.slice(0, 8))); } catch {}
+    renderHistory();
+  }
+  function renderHistory() {
+    const h = loadHist(); $("hist-sec").hidden = !h.length;
+    const ul = $("hist"); ul.replaceChildren();
+    h.forEach((r, i) => {
+      const li = el("li"), b = el("button"); b.type = "button"; b.dataset.h = i;
+      b.append(el("span", "label", r.dir === "ch-en" ? "CHamoru → English" : "English → CHamoru"), el("span", "a", r.src), el("span", "b", r.translation));
+      li.append(b); ul.append(li);
+    });
+  }
+
+  // ---------- Events ----------
+  const updChars = () => { $("chars").textContent = `${$("src").value.length} / 1500`; };
+  $("src").addEventListener("input", updChars);
+  $("src").addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); translate(); } });
+  $("go").addEventListener("click", translate);
+  $("stop").addEventListener("click", () => ctl?.abort());
+  $("clear").addEventListener("click", () => { $("src").value = ""; updChars(); $("src").focus(); });
+  $("swap").addEventListener("click", () => {
+    const next = dir === "ch-en" ? "en-ch" : "ch-en";
+    if (current && current.dir === dir && current.translation) $("src").value = current.translation;
+    updChars(); setDir(next);
+    status(next === "en-ch" ? "English → CHamoru. Type English and press Translate." : "CHamoru → English. Type Chamorro and press Translate.");
+  });
+  $("copy").addEventListener("click", () => {
+    const t = current?.translation || ""; if (!t) return;
+    const done = () => { $("copy").textContent = "Copied"; setTimeout(() => ($("copy").textContent = "Copy"), 1500); };
+    try {
+      navigator.clipboard.writeText(t).then(done, () => { selectOut(); });
+    } catch { selectOut(); }
+  });
+  function selectOut() { const r = document.createRange(); r.selectNodeContents($("out")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); status("Selected the translation. Press Ctrl+C to copy."); }
+  document.addEventListener("click", (e) => {
+    const q = e.target.closest("[data-q]"); if (q) { search(q.dataset.q, true); return; }
+    const h = e.target.closest("[data-h]");
+    if (h) { const r = loadHist()[+h.dataset.h]; if (r) { setDir(r.dir); $("src").value = r.src; updChars(); renderResult(r); status("Restored from your recent translations."); window.scrollTo({ top: 0, behavior: "auto" }); } }
+  });
+  $("out").addEventListener("keydown", (e) => { const w = e.target.closest(".w"); if (w && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); search(w.dataset.q, true); } });
+  $("cform").addEventListener("submit", (e) => { e.preventDefault(); search($("q").value.trim()); });
+  let qt; $("q").addEventListener("input", () => { clearTimeout(qt); qt = setTimeout(() => search($("q").value.trim()), 220); });
+  $("loose").addEventListener("change", () => search($("q").value.trim()));
+  $("more").addEventListener("click", showMore);
+  const tries = document.querySelector(".tries");
+  for (const t of TRIES) { const b = el("button", "chip", t); b.type = "button"; b.dataset.q = t; tries.append(b); }
+
+  $("speak").addEventListener("click", async () => {
+    if (!tts || !current) return;
+    try { await tts.speak(current.translation.slice(0, 2000), { language: "en" }); }
+    catch (e) { if (e?.code === "not_granted") { tts = null; updateSpeak(); } }
+  });
+
+  // Dictation for English input
+  let dictBase = "";
+  $("mic").addEventListener("click", () => {
+    if (!dictation) return;
+    if ($("mic").getAttribute("aria-pressed") === "true") { dictation.stop().catch(() => {}); return; }
+    dictBase = $("src").value ? $("src").value.replace(/\s*$/, " ") : "";
+    dictation.start().catch((e) => { if (e?.code === "not_granted") { dictation = null; $("mic").hidden = true; } });
+  });
+
+  // ---------- Boot ----------
+  setDir("ch-en"); updChars(); renderHistory();
+  renderResult(EXAMPLE);
+
+  fetch("corpus.json").then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); }).then((data) => {
+    buildIndex(data);
+    $("st-s").textContent = fmt(C.N); $("st-w").textContent = fmt(C.post.size); $("st-d").textContent = fmt(C.sources.length);
+    renderResult(current || EXAMPLE);
+    search("guinaiya");
+  }).catch(() => {
+    $("ev").replaceChildren(el("li", "empty", "The corpus couldn't load. Reload the page to try again."));
+    ["st-s", "st-w", "st-d"].forEach((id) => ($(id).textContent = "—"));
+  });
+
+  if (window.claude?.use) {
+    claude.use("sample").then(async (s) => {
+      sample = s;
+      if (!s) { status("Translation needs Claude, which isn't available here. The concordance below works without it."); $("go").disabled = true; return; }
+      try { const lim = await s.limits(); canTools = !!lim?.tools; } catch { canTools = false; }
+    });
+    claude.use("tts").then((t) => { tts = t; updateSpeak(); });
+    claude.use("dictation").then(wireDictation);
+  } else {
+    canTools = true; renderKey();
+    tts = browserTts(); wireDictation(browserDictation());
+    if (!apiKey()) status("This is a sample translation of Psalm 118:1. To translate your own text, add your Claude API key below.");
+  }
+})();
+</script>
+</body>
+</html>
